@@ -52,4 +52,7 @@
     <changeSet id="14" author="sundayti">
         <sqlFile path="changelog/changes/019-diploma_eligibility.sql"/>
     </changeSet>
+    <changeSet id="15" author="sundayti">
+        <sqlFile path="changelog/changes/020-rsosh_registry.sql"/>
+    </changeSet>
 </databaseChangeLog>

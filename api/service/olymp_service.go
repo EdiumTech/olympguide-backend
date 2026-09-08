@@ -84,11 +84,12 @@ func (o *OlympService) DislikeOlymp(olympiadID string, userID uint) (bool, error
 }
 
 func newOlympsShortResponse(olymps []model.Olympiad) []dto.OlympiadShortResponse {
-	var response []dto.OlympiadShortResponse
+	response := make([]dto.OlympiadShortResponse, 0, len(olymps))
 	for _, olympiad := range olymps {
 		response = append(response, dto.OlympiadShortResponse{
-			OlympiadID: olympiad.OlympiadID,
-			Category:   olympiad.Category, AdmissionYear: olympiad.AdmissionYear,
+			OlympiadID:   olympiad.OlympiadID,
+			AcademicYear: olympiad.AcademicYear, RegistryStatus: olympiad.RegistryStatus, Subjects: olympiad.Subjects,
+			Category: olympiad.Category, AdmissionYear: olympiad.AdmissionYear,
 			Name:    olympiad.Name,
 			Level:   olympiad.Level,
 			Profile: olympiad.Profile,
@@ -101,8 +102,9 @@ func newOlympsShortResponse(olymps []model.Olympiad) []dto.OlympiadShortResponse
 func newOlympResponse(olymp *model.Olympiad) *dto.OlympiadResponse {
 	return &dto.OlympiadResponse{
 		OlympiadShortResponse: dto.OlympiadShortResponse{
-			OlympiadID: olymp.OlympiadID,
-			Category:   olymp.Category, AdmissionYear: olymp.AdmissionYear,
+			OlympiadID:   olymp.OlympiadID,
+			AcademicYear: olymp.AcademicYear, RegistryStatus: olymp.RegistryStatus, Subjects: olymp.Subjects,
+			Category: olymp.Category, AdmissionYear: olymp.AdmissionYear,
 			Name:    olymp.Name,
 			Level:   olymp.Level,
 			Profile: olymp.Profile,

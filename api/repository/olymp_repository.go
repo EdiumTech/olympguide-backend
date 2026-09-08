@@ -30,7 +30,7 @@ func (r *PgOlympRepo) GetOlymps(params *dto.OlympQueryParams) ([]model.Olympiad,
 	query := r.db.Debug().
 		Joins("LEFT JOIN olympguide.liked_olympiads lo ON lo.olympiad_id = olympguide.olympiad.olympiad_id AND lo.user_id = ?", params.UserID).
 		Select("olympguide.olympiad.*, CASE WHEN lo.user_id IS NOT NULL THEN TRUE ELSE FALSE END as like")
-	query = query.Where("NOT EXISTS (SELECT 1 FROM olympguide.admission_release) OR admission_year=(SELECT max(admission_year) FROM olympguide.admission_release)")
+	query = query.Where("olympguide.olympiad.category = ? AND academic_year = ? AND registry_active", "rsosh", "2026/2027")
 	query = applyOlympFilters(query, params.Levels, params.Profiles, params.Search)
 	query = applyOlympSorting(query, params.Sort, params.Order)
 
@@ -70,8 +70,7 @@ func (r *PgOlympRepo) GetLikedOlymps(userID uint) ([]model.Olympiad, error) {
 }
 
 func (r *PgOlympRepo) ChangeOlympPopularity(olymp *model.Olympiad, value int) {
-	olymp.Popularity += value
-	r.db.Save(olymp)
+	r.db.Model(olymp).Update("popularity", gorm.Expr("GREATEST(popularity + ?, 0)", value))
 }
 
 func (r *PgOlympRepo) LikeOlymp(olympiadID uint, userID uint) error {
@@ -95,6 +94,7 @@ func (r *PgOlympRepo) DislikeOlymp(olympiadID uint, userID uint) error {
 func (r *PgOlympRepo) GetOlympiadProfiles() ([]string, error) {
 	var profiles []string
 	err := r.db.Model(&model.Olympiad{}).
+		Where("category = ? AND academic_year = ? AND registry_active", "rsosh", "2026/2027").
 		Distinct().
 		Order("profile ASC").
 		Pluck("profile", &profiles).Error
