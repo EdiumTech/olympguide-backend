@@ -9,6 +9,7 @@ import (
 	"api/utils/errs"
 	"bytes"
 	"context"
+	"gorm.io/gorm"
 	"io"
 	"mime/multipart"
 	"path/filepath"
@@ -95,6 +96,10 @@ func (u *UniverService) GetDiplomaUnivers(params *dto.UniverBaseParams, diplomaI
 	diploma, err := u.diplomaRepo.GetDiplomaByID(diplomaID)
 	if err != nil {
 		return nil, err
+	}
+	user, ok := params.UserID.(uint)
+	if !ok || user == 0 || diploma.UserID != user {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	if uintUserID, ok := params.UserID.(uint); ok && params.FromMyRegion {
@@ -292,7 +297,7 @@ func newUniverResponse(univer *model.University) *dto.UniversityResponse {
 }
 
 func newUniversShortResponse(univers []model.University) []dto.UniversityShortResponse {
-	var response []dto.UniversityShortResponse
+	response := make([]dto.UniversityShortResponse, 0, len(univers))
 	for _, univer := range univers {
 		response = append(response, dto.UniversityShortResponse{
 			UniversityID: univer.UniversityID,

@@ -148,6 +148,7 @@ func (b *BenefitHandler) GetBenefitsByDiploma(c *gin.Context) {
 		return
 	}
 	diplomaID := c.Param("id")
+	queryParams.UserID = c.MustGet(constants.ContextUserID)
 	response, err := b.benefitService.GetBenefitsByDiploma(diplomaID, &queryParams)
 	if err != nil {
 		errs.HandleError(c, err)

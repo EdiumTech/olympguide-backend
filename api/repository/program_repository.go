@@ -52,7 +52,7 @@ func (p *PgProgramRepo) GetProgramsByFacultyID(facultyID string, userID any) ([]
 		Joins("LEFT JOIN olympguide.liked_programs lp "+
 			"ON lp.program_id = olympguide.educational_program.program_id AND lp.user_id = ?", userID).
 		Select("olympguide.educational_program.*, CASE WHEN lp.user_id IS NOT NULL THEN TRUE ELSE FALSE END as like").
-		Where("faculty_id = ?", facultyID).
+		Where("faculty_id = ? OR EXISTS (SELECT 1 FROM olympguide.program_faculty pf WHERE pf.program_id=olympguide.educational_program.program_id AND pf.faculty_id=?)", facultyID, facultyID).
 		Find(&programs).Error
 	return programs, err
 }
@@ -81,6 +81,7 @@ func (p *PgProgramRepo) GetUniverProgramsWithFaculty(univerID string, userID any
 		Preload("RequiredSubjects").
 		Preload("Field").
 		Preload("Faculty").
+		Preload("Faculties").
 		Joins("LEFT JOIN olympguide.liked_programs lp ON lp.program_id = olympguide.educational_program.program_id AND lp.user_id = ?", userID).
 		Joins("LEFT JOIN olympguide.field_of_study f ON f.field_id = olympguide.educational_program.field_id").
 		Select("olympguide.educational_program.*, CASE WHEN lp.user_id IS NOT NULL THEN TRUE ELSE FALSE END as like").

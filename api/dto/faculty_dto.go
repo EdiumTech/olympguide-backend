@@ -11,6 +11,8 @@ type FacultyUpdateRequest struct {
 }
 
 type FacultyShortResponse struct {
+	ParentID  *uint  `json:"parent_id"`
+	UnitType  string `json:"unit_type"`
 	FacultyID uint   `json:"faculty_id"`
 	Name      string `json:"name"`
 }

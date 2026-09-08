@@ -1,14 +1,21 @@
 package model
 
+import "encoding/json"
+
 type Olympiad struct {
-	OlympiadID  uint `gorm:"primaryKey"`
-	Name        string
-	Description string
-	Level       int16
-	Profile     string
-	Link        string
-	Popularity  int
-	Like        bool `gorm:"column:like;->"`
+	AcademicYear   string
+	RegistryStatus string
+	Subjects       string
+	Category       string
+	AdmissionYear  *uint
+	OlympiadID     uint `gorm:"primaryKey"`
+	Name           string
+	Description    string
+	Level          int16
+	Profile        string
+	Link           string
+	Popularity     int
+	Like           bool `gorm:"column:like;->"`
 }
 
 type Field struct {
@@ -35,22 +42,24 @@ type University struct {
 }
 
 type Program struct {
-	ProgramID        uint `gorm:"primaryKey"`
-	Name             string
-	BudgetPlaces     uint
-	PaidPlaces       uint
-	Cost             uint
-	Link             string
-	UniversityID     uint
-	FacultyID        uint
-	FieldID          uint
-	Popularity       int
-	University       University `gorm:"foreignKey:UniversityID;references:UniversityID"`
-	Faculty          Faculty    `gorm:"foreignKey:FacultyID;references:FacultyID"`
-	Field            Field      `gorm:"foreignKey:FieldID;references:FieldID"`
-	OptionalSubjects []Subject  `gorm:"many2many:olympguide.program_optional_subjects;foreignKey:ProgramID;joinForeignKey:ProgramID;References:SubjectID;joinReferences:SubjectID"`
-	RequiredSubjects []Subject  `gorm:"many2many:olympguide.program_required_subjects;foreignKey:ProgramID;joinForeignKey:ProgramID;References:SubjectID;joinReferences:SubjectID"`
-	Like             bool       `gorm:"column:like;->"`
+	AdmissionMetadata json.RawMessage
+	Faculties         []Faculty `gorm:"many2many:olympguide.program_faculty;foreignKey:ProgramID;joinForeignKey:ProgramID;References:FacultyID;joinReferences:FacultyID"`
+	ProgramID         uint      `gorm:"primaryKey"`
+	Name              string
+	BudgetPlaces      *uint
+	PaidPlaces        *uint
+	Cost              *uint
+	Link              string
+	UniversityID      uint
+	FacultyID         uint
+	FieldID           uint
+	Popularity        int
+	University        University `gorm:"foreignKey:UniversityID;references:UniversityID"`
+	Faculty           Faculty    `gorm:"foreignKey:FacultyID;references:FacultyID"`
+	Field             Field      `gorm:"foreignKey:FieldID;references:FieldID"`
+	OptionalSubjects  []Subject  `gorm:"many2many:olympguide.program_optional_subjects;foreignKey:ProgramID;joinForeignKey:ProgramID;References:SubjectID;joinReferences:SubjectID"`
+	RequiredSubjects  []Subject  `gorm:"many2many:olympguide.program_required_subjects;foreignKey:ProgramID;joinForeignKey:ProgramID;References:SubjectID;joinReferences:SubjectID"`
+	Like              bool       `gorm:"column:like;->"`
 }
 
 func (Field) TableName() string      { return "olympguide.field_of_study" }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
@@ -37,4 +37,22 @@
         <sqlFile path="changelog/changes/014-add_apple_id.sql"/>
     </changeSet>
     
+    <changeSet id="10" author="sundayti">
+        <sqlFile path="changelog/changes/015-admissions_catalog.sql"/>
+    </changeSet>
+    <changeSet id="11" author="sundayti">
+        <sqlFile path="changelog/changes/016-unknown_program_quantities.sql"/>
+    </changeSet>
+    <changeSet id="12" author="sundayti">
+        <sqlFile path="changelog/changes/017-scholarships.sql"/>
+    </changeSet>
+    <changeSet id="13" author="sundayti">
+        <sqlFile path="changelog/changes/018-personal_calendar.sql"/>
+    </changeSet>
+    <changeSet id="14" author="sundayti">
+        <sqlFile path="changelog/changes/019-diploma_eligibility.sql"/>
+    </changeSet>
+    <changeSet id="15" author="sundayti">
+        <sqlFile path="changelog/changes/020-rsosh_registry.sql"/>
+    </changeSet>
 </databaseChangeLog>

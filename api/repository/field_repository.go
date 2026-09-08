@@ -29,6 +29,7 @@ func (f *PgFieldRepo) GetField(fieldID string) (*model.Field, error) {
 func (f *PgFieldRepo) GetGroups(search string, degrees []string) ([]model.GroupField, error) {
 	var groups []model.GroupField
 	query := f.db.Preload("Fields", func(db *gorm.DB) *gorm.DB {
+		db = db.Where("EXISTS (SELECT 1 FROM olympguide.educational_program ep WHERE ep.field_id = olympguide.field_of_study.field_id)")
 		if len(degrees) > 0 {
 			db = db.Where("degree IN (?)", degrees)
 		}

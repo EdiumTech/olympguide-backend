@@ -1,5 +1,7 @@
 package dto
 
+import "encoding/json"
+
 type BenefitRequest struct {
 	OlympiadID        uint                `json:"olympiad_id" binding:"required"`
 	ProgramID         uint                `json:"program_id" binding:"required"`
@@ -21,8 +23,10 @@ type ConfirmSubjectResp struct {
 }
 
 type BenefitInfo struct {
-	MinClass          uint                 `json:"min_class"`
-	MinDiplomaLevel   uint                 `json:"min_diploma_level"`
+	AdmissionRule     json.RawMessage      `json:"admission_rule,omitempty"`
+	SourceRelation    string               `json:"source_relation,omitempty"`
+	MinClass          *uint                `json:"min_class"`
+	MinDiplomaLevel   *uint                `json:"min_diploma_level"`
 	BVI               bool                 `json:"is_bvi"`
 	ConfirmSubjects   []ConfirmSubjectResp `json:"confirmation_subjects"`
 	FullScoreSubjects []string             `json:"full_score_subjects"`
@@ -45,6 +49,7 @@ type BenefitByProgramQueryParams struct {
 }
 
 type BenefitByOlympiadQueryParams struct {
+	UserID       any      `form:"-" json:"-"`
 	Fields       []string `form:"field"`
 	UniversityID uint     `form:"university_id"`
 	BenefitBaseQueryParams

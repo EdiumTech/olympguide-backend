@@ -143,16 +143,17 @@ func newProgramShortResponse(program *model.Program) *dto.ProgramShortResponse {
 	}
 
 	return &dto.ProgramShortResponse{
-		ProgramID:        program.ProgramID,
-		Name:             program.Name,
-		Field:            program.Field.Code,
-		BudgetPlaces:     program.BudgetPlaces,
-		PaidPlaces:       program.PaidPlaces,
-		Cost:             program.Cost,
-		Link:             program.Link,
-		Like:             program.Like,
-		RequiredSubjects: requiredSubjects,
-		OptionalSubjects: optionalSubjects,
+		ProgramID:         program.ProgramID,
+		AdmissionMetadata: program.AdmissionMetadata,
+		Name:              program.Name,
+		Field:             program.Field.Code,
+		BudgetPlaces:      program.BudgetPlaces,
+		PaidPlaces:        program.PaidPlaces,
+		Cost:              program.Cost,
+		Link:              program.Link,
+		Like:              program.Like,
+		RequiredSubjects:  requiredSubjects,
+		OptionalSubjects:  optionalSubjects,
 	}
 }
 
@@ -208,28 +209,30 @@ func newProgramModel(request *dto.ProgramRequest) *model.Program {
 }
 
 func newFacultyProgramTree(programs []model.Program) []dto.FacultyProgramTree {
-	var result []dto.FacultyProgramTree
-	var currentTree *dto.FacultyProgramTree
-	var currentFacultyID uint
-
-	for _, program := range programs {
-		if program.FacultyID != currentFacultyID {
-			currentFacultyID = program.FacultyID
-			tree := dto.FacultyProgramTree{
-				FacultyID: program.FacultyID,
-				Name:      program.Faculty.Name,
+	result := make([]dto.FacultyProgramTree, 0)
+	indexes := map[uint]int{}
+	for _, p := range programs {
+		faculties := p.Faculties
+		if len(faculties) == 0 {
+			faculties = []model.Faculty{p.Faculty}
+		}
+		for _, f := range faculties {
+			if f.ParentID != nil {
+				continue
 			}
-			result = append(result, tree)
-			currentTree = &result[len(result)-1]
+			name := f.Name
+			if f.FacultyID == 0 {
+				name = "Подразделение не подтверждено"
+			}
+			index, ok := indexes[f.FacultyID]
+			if !ok {
+				index = len(result)
+				indexes[f.FacultyID] = index
+				result = append(result, dto.FacultyProgramTree{FacultyID: f.FacultyID, Name: name, Programs: make([]dto.ProgramShortResponse, 0)})
+			}
+			result[index].Programs = append(result[index].Programs, *newProgramShortResponse(&p))
 		}
-
-		if currentTree == nil {
-			continue
-		}
-
-		currentTree.Programs = append(currentTree.Programs, *newProgramShortResponse(&program))
 	}
-
 	return result
 }
 
@@ -243,7 +246,7 @@ func newGroupProgramTree(programs []model.Program) []dto.GroupProgramTree {
 			currentGroupID = program.Field.GroupID
 			tree := dto.GroupProgramTree{
 				GroupID: program.Field.GroupID,
-				Name:    program.Field.Name,
+				Name:    program.Field.Group.Name,
 				Code:    program.Field.Group.Code,
 			}
 			result = append(result, tree)

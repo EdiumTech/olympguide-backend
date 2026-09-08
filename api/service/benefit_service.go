@@ -5,6 +5,7 @@ import (
 	"api/model"
 	"api/repository"
 	"errors"
+	"gorm.io/gorm"
 )
 
 type IBenefitService interface {
@@ -56,6 +57,10 @@ func (b *BenefitService) GetBenefitsByDiploma(diplomaID string, request *dto.Ben
 		return nil, err
 	}
 
+	user, ok := request.UserID.(uint)
+	if !ok || user == 0 || diploma.UserID != user {
+		return nil, gorm.ErrRecordNotFound
+	}
 	benefits, err := b.benefitRepo.GetBenefitsByDiplomas([]model.Diploma{*diploma}, request)
 	if err != nil {
 		return nil, err
@@ -111,13 +116,15 @@ func newBenefitModel(request *dto.BenefitRequest) *model.Benefit {
 }
 
 func newOlympiadBenefitTrees(benefits []model.Benefit) []dto.OlympiadBenefitTree {
-	var result []dto.OlympiadBenefitTree
+	result := make([]dto.OlympiadBenefitTree, 0)
+	indexes := map[uint]int{}
 	var currentTree *dto.OlympiadBenefitTree
-	var currentOlympiadID uint
 
 	for _, b := range benefits {
-		if b.OlympiadID != currentOlympiadID {
-			currentOlympiadID = b.OlympiadID
+		if index, ok := indexes[b.OlympiadID]; ok {
+			currentTree = &result[index]
+		} else {
+			indexes[b.OlympiadID] = len(result)
 			tree := dto.OlympiadBenefitTree{
 				Olympiad: dto.OlympiadBenefitInfo{
 					OlympiadID: b.Olympiad.OlympiadID,
@@ -140,13 +147,15 @@ func newOlympiadBenefitTrees(benefits []model.Benefit) []dto.OlympiadBenefitTree
 }
 
 func newProgramBenefitTrees(benefits []model.Benefit) []dto.ProgramBenefitTree {
-	var result []dto.ProgramBenefitTree
+	result := make([]dto.ProgramBenefitTree, 0)
+	indexes := map[uint]int{}
 	var currentTree *dto.ProgramBenefitTree
-	var currentProgramID uint
 
 	for _, b := range benefits {
-		if b.ProgramID != currentProgramID {
-			currentProgramID = b.ProgramID
+		if index, ok := indexes[b.ProgramID]; ok {
+			currentTree = &result[index]
+		} else {
+			indexes[b.ProgramID] = len(result)
 			tree := dto.ProgramBenefitTree{
 				Program: dto.ProgramBenefitInfo{
 					ProgramID:    b.Program.ProgramID,
@@ -172,9 +181,16 @@ func newProgramBenefitTrees(benefits []model.Benefit) []dto.ProgramBenefitTree {
 
 func extractBenefitInfo(b model.Benefit) dto.BenefitInfo {
 	benefitInfo := dto.BenefitInfo{
-		MinClass:        b.MinClass,
-		MinDiplomaLevel: b.MinDiplomaLevel,
+		MinClass:        &b.MinClass,
+		MinDiplomaLevel: &b.MinDiplomaLevel,
 		BVI:             b.BVI,
+	}
+
+	if len(b.AdmissionRule) > 0 {
+		benefitInfo.MinClass = nil
+		benefitInfo.MinDiplomaLevel = nil
+		benefitInfo.AdmissionRule = b.AdmissionRule
+		benefitInfo.SourceRelation = b.SourceRelation
 	}
 
 	for i := range b.ConfirmationSubjects {
