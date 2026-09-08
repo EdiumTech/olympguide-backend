@@ -190,7 +190,9 @@ def verify(domain):
         raise SystemExit('Expected a DNS hostname.')
     for path in ('/healthz', '/readyz', '/api/v1/universities', '/api/v1/olympiads'):
         with urllib.request.urlopen('https://' + domain + path, timeout=20) as response:
-            json.load(response)
+            payload = json.load(response)
+            if path in ('/api/v1/universities', '/api/v1/olympiads') and not isinstance(payload, list):
+                raise SystemExit(f'{path}: expected a JSON array, got {type(payload).__name__}')
             print(f'{path}: HTTPS {response.status}; valid JSON')
     print('HTTPS/API checks passed. Check catalog population and SMTP separately.')
 

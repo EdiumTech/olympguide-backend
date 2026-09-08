@@ -292,7 +292,7 @@ func newUniverResponse(univer *model.University) *dto.UniversityResponse {
 }
 
 func newUniversShortResponse(univers []model.University) []dto.UniversityShortResponse {
-	var response []dto.UniversityShortResponse
+	response := make([]dto.UniversityShortResponse, 0, len(univers))
 	for _, univer := range univers {
 		response = append(response, dto.UniversityShortResponse{
 			UniversityID: univer.UniversityID,
