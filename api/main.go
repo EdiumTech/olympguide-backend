@@ -86,17 +86,20 @@ func initHandlers(db *gorm.DB, redis *redis.Client, conn *grpc.ClientConn) *hand
 	tokenService := service.NewTokenService()
 
 	return &handler.Handlers{
-		Admission: handler.NewAdmissionHandler(db),
-		Auth:      handler.NewAuthHandler(authService, googleAuthService, tokenService),
-		Univer:    handler.NewUniverHandler(univerService),
-		Field:     handler.NewFieldHandler(fieldService),
-		Olymp:     handler.NewOlympHandler(olympService),
-		Meta:      handler.NewMetaHandler(metaService),
-		User:      handler.NewUserHandler(userService),
-		Faculty:   handler.NewFacultyHandler(facultyService),
-		Program:   handler.NewProgramHandler(programService),
-		Diploma:   handler.NewDiplomaHandler(diplomaService),
-		Benefit:   handler.NewBenefitHandler(benefitService),
+		Eligibility: handler.NewEligibilityHandler(db),
+		Admission:   handler.NewAdmissionHandler(db),
+		Calendar:    handler.NewCalendarHandler(db),
+		Scholarship: handler.NewScholarshipHandler(db),
+		Auth:        handler.NewAuthHandler(authService, googleAuthService, tokenService),
+		Univer:      handler.NewUniverHandler(univerService),
+		Field:       handler.NewFieldHandler(fieldService),
+		Olymp:       handler.NewOlympHandler(olympService),
+		Meta:        handler.NewMetaHandler(metaService),
+		User:        handler.NewUserHandler(userService),
+		Faculty:     handler.NewFacultyHandler(facultyService),
+		Program:     handler.NewProgramHandler(programService),
+		Diploma:     handler.NewDiplomaHandler(diplomaService),
+		Benefit:     handler.NewBenefitHandler(benefitService),
 	}
 }
 

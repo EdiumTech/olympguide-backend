@@ -43,4 +43,13 @@
     <changeSet id="11" author="sundayti">
         <sqlFile path="changelog/changes/016-unknown_program_quantities.sql"/>
     </changeSet>
+    <changeSet id="12" author="sundayti">
+        <sqlFile path="changelog/changes/017-scholarships.sql"/>
+    </changeSet>
+    <changeSet id="13" author="sundayti">
+        <sqlFile path="changelog/changes/018-personal_calendar.sql"/>
+    </changeSet>
+    <changeSet id="14" author="sundayti">
+        <sqlFile path="changelog/changes/019-diploma_eligibility.sql"/>
+    </changeSet>
 </databaseChangeLog>

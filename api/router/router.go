@@ -85,6 +85,26 @@ func (rt *Router) setupRoutes() {
 
 	rt.api.GET("/admissions", rt.handlers.Admission.Status)
 	rt.api.GET("/admissions/rules", rt.handlers.Admission.Rules)
+	if rt.handlers.Scholarship != nil {
+		rt.api.GET("/scholarships", rt.handlers.Scholarship.List)
+	}
+	if h := rt.handlers.Calendar; h != nil {
+		rt.api.GET("/calendar/events", h.Events)
+		personal := rt.api.Group("/user/calendar", rt.mw.UserMiddleware())
+		personal.GET("", h.Plan)
+		personal.POST("", h.Add)
+		personal.POST("/custom", h.Custom)
+		personal.PUT("/:id", h.Update)
+		personal.DELETE("/:id", h.Delete)
+	}
+	if h := rt.handlers.Eligibility; h != nil {
+		rt.api.GET("/personal/catalog", h.Catalog)
+		personal := rt.api.Group("/user", rt.mw.UserMiddleware())
+		personal.GET("/admission-profile", h.Profile)
+		personal.PUT("/admission-profile", h.SaveProfile)
+		personal.PUT("/diploma/:id/details", h.UpdateDiploma)
+		personal.GET("/recommendations", h.Recommendations)
+	}
 	rt.setupAuthRoutes()
 	rt.setupUniverRoutes()
 	rt.setupUserRoutes()

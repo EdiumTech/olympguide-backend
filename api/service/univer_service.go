@@ -9,6 +9,7 @@ import (
 	"api/utils/errs"
 	"bytes"
 	"context"
+	"gorm.io/gorm"
 	"io"
 	"mime/multipart"
 	"path/filepath"
@@ -95,6 +96,10 @@ func (u *UniverService) GetDiplomaUnivers(params *dto.UniverBaseParams, diplomaI
 	diploma, err := u.diplomaRepo.GetDiplomaByID(diplomaID)
 	if err != nil {
 		return nil, err
+	}
+	user, ok := params.UserID.(uint)
+	if !ok || user == 0 || diploma.UserID != user {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	if uintUserID, ok := params.UserID.(uint); ok && params.FromMyRegion {
