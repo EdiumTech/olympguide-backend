@@ -44,7 +44,25 @@ func (b *PgBenefitRepo) GetBenefitsByProgram(programID string, params *dto.Benef
 	applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
 	applyBenefitByProgramSorting(query, params.Sort, params.Order)
 	err := query.Find(&benefits).Error
-	return benefits, err
+	if err != nil {
+		return nil, err
+	}
+	if len(params.MinClass) > 0 || len(params.MinDiplomaLevel) > 0 {
+		return benefits, nil
+	}
+	raw := admissionBenefitQuery(b.db).Where("pr.program_id = ?", programID)
+	if len(params.Levels) > 0 {
+		raw = raw.Where("olymp.level IN ?", params.Levels)
+	}
+	if len(params.Profiles) > 0 {
+		raw = raw.Where("olymp.profile IN ?", params.Profiles)
+	}
+	if params.Search != "" {
+		raw = raw.Where("olymp.name ILIKE ?", "%"+params.Search+"%")
+	}
+	raw = filterAdmissionType(raw, params.BVI)
+	rules, err := admissionBenefits(b.db, raw)
+	return append(benefits, rules...), err
 }
 
 func (b *PgBenefitRepo) GetBenefitsByOlympiad(olympiadID string, params *dto.BenefitByOlympiadQueryParams) ([]model.Benefit, error) {
@@ -58,7 +76,25 @@ func (b *PgBenefitRepo) GetBenefitsByOlympiad(olympiadID string, params *dto.Ben
 	applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
 	applyBenefitsByOlympiadFilters(query, params.Fields, params.Search, params.UniversityID)
 	err := query.Find(&benefits).Error
-	return benefits, err
+	if err != nil {
+		return nil, err
+	}
+	if len(params.MinClass) > 0 || len(params.MinDiplomaLevel) > 0 {
+		return benefits, nil
+	}
+	raw := admissionBenefitQuery(b.db).Where("ar.olympiad_id = ?", olympiadID)
+	if params.UniversityID > 0 {
+		raw = raw.Where("ar.university_id = ?", params.UniversityID)
+	}
+	if len(params.Fields) > 0 {
+		raw = raw.Where("fos.code IN ?", params.Fields)
+	}
+	if params.Search != "" {
+		raw = raw.Where("ep.name ILIKE ? OR fos.code ILIKE ?", "%"+params.Search+"%", "%"+params.Search+"%")
+	}
+	raw = filterAdmissionType(raw, params.BVI)
+	rules, err := admissionBenefits(b.db, raw)
+	return append(benefits, rules...), err
 }
 
 func (b *PgBenefitRepo) GetBenefitsByDiplomas(diplomas []model.Diploma, params *dto.BenefitByOlympiadQueryParams) ([]model.Benefit, error) {
@@ -158,6 +194,17 @@ func applyBenefitsByOlympiadFilters(query *gorm.DB, fields []string, search stri
 	}
 	if universityID > 0 {
 		query = query.Where("pr.university_id = ?", universityID)
+	}
+	return query
+}
+
+func filterAdmissionType(query *gorm.DB, types []bool) *gorm.DB {
+	if len(types) == 1 {
+		kind := "100_points"
+		if types[0] {
+			kind = "bvi"
+		}
+		return query.Where("jsonb_exists(ar.payload->'benefit_types', ?)", kind)
 	}
 	return query
 }

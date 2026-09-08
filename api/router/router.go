@@ -83,6 +83,8 @@ func (rt *Router) setupRoutes() {
 	rt.engine.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	rt.engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	rt.api.GET("/admissions", rt.handlers.Admission.Status)
+	rt.api.GET("/admissions/rules", rt.handlers.Admission.Rules)
 	rt.setupAuthRoutes()
 	rt.setupUniverRoutes()
 	rt.setupUserRoutes()
@@ -201,6 +203,7 @@ func (rt *Router) setupMetaRoutes() {
 
 func (rt *Router) setupFacultyRoutes() {
 	faculty := rt.api.Group("/faculty")
+	faculty.GET("/:id/programs", rt.handlers.Program.GetProgramsByFaculty)
 	faculty.Use(rt.mw.RolesMiddleware(role.Founder, role.Admin, role.DataLoaderService))
 	{
 		faculty.POST("/", rt.handlers.Faculty.NewFaculty)
@@ -209,7 +212,6 @@ func (rt *Router) setupFacultyRoutes() {
 		{
 			facultyWithID.PUT("/", rt.handlers.Faculty.UpdateFaculty)
 			facultyWithID.DELETE("/", rt.handlers.Faculty.DeleteFaculty)
-			facultyWithID.GET("/programs", rt.mw.NoMiddleware(), rt.handlers.Program.GetProgramsByFaculty)
 		}
 	}
 }

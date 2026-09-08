@@ -88,10 +88,11 @@ func newOlympsShortResponse(olymps []model.Olympiad) []dto.OlympiadShortResponse
 	for _, olympiad := range olymps {
 		response = append(response, dto.OlympiadShortResponse{
 			OlympiadID: olympiad.OlympiadID,
-			Name:       olympiad.Name,
-			Level:      olympiad.Level,
-			Profile:    olympiad.Profile,
-			Like:       olympiad.Like,
+			Category:   olympiad.Category, AdmissionYear: olympiad.AdmissionYear,
+			Name:    olympiad.Name,
+			Level:   olympiad.Level,
+			Profile: olympiad.Profile,
+			Like:    olympiad.Like,
 		})
 	}
 	return response
@@ -101,10 +102,11 @@ func newOlympResponse(olymp *model.Olympiad) *dto.OlympiadResponse {
 	return &dto.OlympiadResponse{
 		OlympiadShortResponse: dto.OlympiadShortResponse{
 			OlympiadID: olymp.OlympiadID,
-			Name:       olymp.Name,
-			Level:      olymp.Level,
-			Profile:    olymp.Profile,
-			Like:       olymp.Like,
+			Category:   olymp.Category, AdmissionYear: olymp.AdmissionYear,
+			Name:    olymp.Name,
+			Level:   olymp.Level,
+			Profile: olymp.Profile,
+			Like:    olymp.Like,
 		},
 		Description: olymp.Description,
 		Link:        olymp.Link,

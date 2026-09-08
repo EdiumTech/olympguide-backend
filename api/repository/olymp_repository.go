@@ -30,6 +30,7 @@ func (r *PgOlympRepo) GetOlymps(params *dto.OlympQueryParams) ([]model.Olympiad,
 	query := r.db.Debug().
 		Joins("LEFT JOIN olympguide.liked_olympiads lo ON lo.olympiad_id = olympguide.olympiad.olympiad_id AND lo.user_id = ?", params.UserID).
 		Select("olympguide.olympiad.*, CASE WHEN lo.user_id IS NOT NULL THEN TRUE ELSE FALSE END as like")
+	query = query.Where("NOT EXISTS (SELECT 1 FROM olympguide.admission_release) OR admission_year=(SELECT max(admission_year) FROM olympguide.admission_release)")
 	query = applyOlympFilters(query, params.Levels, params.Profiles, params.Search)
 	query = applyOlympSorting(query, params.Sort, params.Order)
 

@@ -72,6 +72,8 @@ func newFacultiesShortResponse(faculties []model.Faculty) []dto.FacultyShortResp
 	for i, faculty := range faculties {
 		response[i] = dto.FacultyShortResponse{
 			FacultyID: faculty.FacultyID,
+			ParentID:  faculty.ParentID,
+			UnitType:  faculty.UnitType,
 			Name:      faculty.Name,
 		}
 	}

@@ -1,5 +1,7 @@
 package model
 
+import "encoding/json"
+
 type GroupField struct {
 	GroupID uint
 	Name    string
@@ -13,6 +15,8 @@ type Region struct {
 }
 
 type Faculty struct {
+	ParentID     *uint
+	UnitType     string
 	FacultyID    uint `gorm:"primaryKey"`
 	Name         string
 	Description  string
@@ -36,7 +40,9 @@ type Diploma struct {
 }
 
 type Benefit struct {
-	BenefitID            uint `gorm:"primaryKey"`
+	AdmissionRule        json.RawMessage `gorm:"-"`
+	SourceRelation       string          `gorm:"-"`
+	BenefitID            uint            `gorm:"primaryKey"`
 	ProgramID            uint
 	OlympiadID           uint
 	MinClass             uint

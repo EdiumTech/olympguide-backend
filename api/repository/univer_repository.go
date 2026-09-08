@@ -66,7 +66,8 @@ func (u *PgUniverRepo) GetBenefitByOlympUnivers(params *dto.UniverBaseParams, ol
 		"FROM olympguide.benefit AS b "+
 		"JOIN olympguide.educational_program AS pr ON pr.program_id = b.program_id "+
 		"JOIN olympguide.university AS u ON u.university_id = pr.university_id "+
-		"WHERE b.olympiad_id = ?)", olympiadID)
+		"WHERE b.olympiad_id = ? UNION SELECT university_id FROM olympguide.admission_rule "+
+		"WHERE olympiad_id = ? AND admission_year = (SELECT max(admission_year) FROM olympguide.admission_release))", olympiadID, olympiadID)
 
 	if err := query.Order("popularity DESC").Find(&universities).Error; err != nil {
 		return nil, err

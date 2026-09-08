@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
@@ -37,4 +37,7 @@
         <sqlFile path="changelog/changes/014-add_apple_id.sql"/>
     </changeSet>
     
+    <changeSet id="10" author="sundayti">
+        <sqlFile path="changelog/changes/015-admissions_catalog.sql"/>
+    </changeSet>
 </databaseChangeLog>

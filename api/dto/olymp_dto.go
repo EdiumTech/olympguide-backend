@@ -12,11 +12,13 @@ type OlympQueryParams struct {
 
 // OlympiadShortResponse представляет сокращённую информацию об олимпиаде.
 type OlympiadShortResponse struct {
-	OlympiadID uint   `json:"olympiad_id" example:"123"`                      // ID олимпиады
-	Name       string `json:"name" example:"Олимпиада Росатом по математике"` // Название олимпиады
-	Level      int16  `json:"level" example:"1"`                              // Уровень олимпиады
-	Profile    string `json:"profile" example:"физика"`                       // Профиль олимпиады
-	Like       bool   `json:"like" example:"true"`                            // Лайкнута ли олимпиада пользователем
+	Category      string `json:"category,omitempty"`
+	AdmissionYear *uint  `json:"admission_year,omitempty"`
+	OlympiadID    uint   `json:"olympiad_id" example:"123"`                      // ID олимпиады
+	Name          string `json:"name" example:"Олимпиада Росатом по математике"` // Название олимпиады
+	Level         int16  `json:"level" example:"1"`                              // Уровень олимпиады
+	Profile       string `json:"profile" example:"физика"`                       // Профиль олимпиады
+	Like          bool   `json:"like" example:"true"`                            // Лайкнута ли олимпиада пользователем
 }
 type OlympiadResponse struct {
 	OlympiadShortResponse

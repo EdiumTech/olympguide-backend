@@ -1,16 +1,19 @@
 package dto
 
+import "encoding/json"
+
 type ProgramShortResponse struct {
-	ProgramID        uint     `json:"program_id"`
-	Name             string   `json:"name"`
-	Field            string   `json:"field"`
-	BudgetPlaces     uint     `json:"budget_places"`
-	PaidPlaces       uint     `json:"paid_places"`
-	Cost             uint     `json:"cost"`
-	RequiredSubjects []string `json:"required_subjects"`
-	OptionalSubjects []string `json:"optional_subjects"`
-	Link             string   `json:"link"`
-	Like             bool     `json:"like"`
+	AdmissionMetadata json.RawMessage `json:"admission_metadata,omitempty"`
+	ProgramID         uint            `json:"program_id"`
+	Name              string          `json:"name"`
+	Field             string          `json:"field"`
+	BudgetPlaces      uint            `json:"budget_places"`
+	PaidPlaces        uint            `json:"paid_places"`
+	Cost              uint            `json:"cost"`
+	RequiredSubjects  []string        `json:"required_subjects"`
+	OptionalSubjects  []string        `json:"optional_subjects"`
+	Link              string          `json:"link"`
+	Like              bool            `json:"like"`
 }
 
 type ProgramResponse struct {
