@@ -75,3 +75,26 @@ and full generated SQL were applied twice to a temporary PostgreSQL clone:
 7 universities, 379 programs, 7,891 rules, 20,196 program/rule associations.
 The clone was removed afterwards. Public API checks should verify all seven
 university program trees, nested program/olympiad benefits and paginated rules.
+
+## Стоимость и места приёма 2026
+
+Дополнение из `olympguide-static/data_loader/admissions/releases/2026-quantities.json`
+проверяется по SHA-256 и накладывается на каталог по стабильным идентификаторам.
+Полный импорт также использует его и не возвращает цены/места к пустым значениям.
+Для уже загруженного каталога:
+
+```console
+python deploy/import_admissions.py --static-repo ../olympguide-static --quantities-only --host 158.160.150.215
+python deploy/verify_quantities.py --static-repo ../olympguide-static
+```
+
+Импорт создаёт резервную копию, проверяет соответствие всех 379 программ вузам
+и кодам направлений, обновляет три числовых поля и их происхождение в одной
+транзакции. Числа общих конкурсных групп нельзя суммировать по профилям.
+`admission_metadata.cost_period` — `year` или `semester`; у МИФИ опубликован
+осенний семестр. Клиент обязан учитывать период и показывать `places_note`,
+`quantity_notes` и ссылки `quantity_evidence.*.source_url`.
+
+На 08.09.2026 подтверждены 372 бюджетных показателя, 365 платных и 367 тарифов.
+Оставшиеся значения имеют `null` и пояснение; тариф на семестр не преобразуется
+в годовой. Подробный охват и исключения — в `admissions/QUANTITIES.md` static-репозитория.

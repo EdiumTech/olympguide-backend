@@ -29,7 +29,7 @@ def ref(table, column, key):
     return f'(SELECT {column} FROM olympguide.{table} WHERE catalog_key={literal(key)})'
 
 
-def build_sql(catalog, manifest_sha):
+def build_sql(catalog, manifest_sha, quantity_manifest_sha=None):
     """Upsert identities; replace only this admission year's rules atomically."""
     c = catalog
     year = c.bootstrap['admission_year']
@@ -48,6 +48,8 @@ def build_sql(catalog, manifest_sha):
     stats = dict(admission_year=year, collected_on=c.bootstrap['collected_on'],
                  universities=len(c.universities), units=len(c.units), programs=len(programs),
                  fields=len(c.fields), olympiad_profiles=len(olympiads), rules=len(c.rules), sources=len(c.sources))
+    if c.quantity_data:
+        stats['quantities'] = dict(manifest_sha256=quantity_manifest_sha, coverage=c.quantity_data['coverage'])
     sql = ['BEGIN;', 'SET LOCAL standard_conforming_strings=on;', "SET LOCAL lock_timeout='15s';",
            'SELECT pg_advisory_xact_lock(2026, 7891);']
     def insert(table, data, conflict=None, update=None):
@@ -85,10 +87,10 @@ def build_sql(catalog, manifest_sha):
                     university_id=ref('university', 'university_id', p['university_id']),
                     faculty_id=ref('faculty', 'faculty_id', units[0]) if units else 'NULL',
                     field_id=f'(SELECT field_id FROM olympguide.field_of_study WHERE code={literal(p["field_id"])})',
-                    budget_places='NULL', paid_places='NULL', cost='NULL',
+                    budget_places=literal(p.get('budget_places')), paid_places=literal(p.get('paid_places')), cost=literal(p.get('cost')),
                     link=literal(p.get('program_url') or p.get('source_url') or c.universities[p['university_id']]['site']),
-                    admission_metadata=literal(dict(p, admission_year=year, places_known=False, cost_known=False, subjects_known=False)))
-        insert('educational_program', data, 'catalog_key', ['name', 'university_id', 'faculty_id', 'field_id', 'link', 'admission_metadata'])
+                    admission_metadata=literal(dict(p, admission_year=year, places_known=p.get('places_known', False), cost_known=p.get('cost_known', False), subjects_known=False)))
+        insert('educational_program', data, 'catalog_key', ['name', 'university_id', 'faculty_id', 'field_id', 'link', 'admission_metadata', 'budget_places', 'paid_places', 'cost'])
         pid = ref('educational_program', 'program_id', key)
         sql.append(f'DELETE FROM olympguide.program_faculty WHERE program_id={pid};')
         for unit in sorted(set(units + p['department_ids'])):
@@ -125,18 +127,45 @@ def build_sql(catalog, manifest_sha):
     return '\n'.join(sql) + '\n', stats
 
 
-def prepare(static_repo):
+def build_quantity_sql(catalog, manifest_sha):
+    if not catalog.quantity_data:
+        raise ValueError('Verified quantity supplement is required')
+    records = catalog.quantity_data['programs']
+    rows = []
+    for q in records:
+        metadata = {k: v for k, v in q.items() if k not in ('id', 'university_id', 'field_id', 'name')}
+        metadata['quantity_release'] = catalog.programs[q['id']]['quantity_release']
+        rows.append('(' + ','.join(literal(v) for v in (q['id'], q['university_id'], q['field_id'],
+                     q['budget_places'], q['paid_places'], q['cost'], metadata)) + ')')
+    sql = ['BEGIN;', 'SET LOCAL standard_conforming_strings=on;', "SET LOCAL lock_timeout='15s';",
+           'SELECT pg_advisory_xact_lock(2026, 7891);',
+           'CREATE TEMP TABLE quantity_import (catalog_key text PRIMARY KEY, university_key text, field_code text, budget_places smallint, paid_places smallint, cost integer, metadata jsonb) ON COMMIT DROP;',
+           'INSERT INTO quantity_import VALUES ' + ',\n'.join(rows) + ';',
+           "DO $$ BEGIN IF (SELECT count(*) FROM quantity_import q JOIN olympguide.educational_program p USING(catalog_key) JOIN olympguide.university u USING(university_id) JOIN olympguide.field_of_study f USING(field_id) WHERE u.catalog_key=q.university_key AND f.code=q.field_code) <> " + str(len(records)) + " THEN RAISE EXCEPTION 'Quantity/program identity mismatch'; END IF; END $$;",
+           "UPDATE olympguide.educational_program p SET budget_places=q.budget_places, paid_places=q.paid_places, cost=q.cost, admission_metadata=COALESCE(p.admission_metadata,'{}'::jsonb)||q.metadata FROM quantity_import q WHERE p.catalog_key=q.catalog_key;",
+           'UPDATE olympguide.admission_release SET payload=payload||' + literal(dict(quantities=dict(manifest_sha256=manifest_sha, coverage=catalog.quantity_data['coverage']))) + '::jsonb WHERE admission_year=2026;',
+           'COMMIT;']
+    return '\n'.join(sql) + '\n', dict(programs=len(records), coverage=catalog.quantity_data['coverage'])
+
+
+def prepare(static_repo, *, quantities_only=False):
     static_repo = static_repo.resolve()
     sys.path.insert(0, str(static_repo / 'data_loader'))
     sys.path.insert(0, str(static_repo / 'web'))
     from admissions.download import install
     from admissions.loader import validate
     from catalog import Catalog
+    from admissions.quantity_catalog import download as download_quantities, MANIFEST as QUANTITY_MANIFEST
     manifest = static_repo / 'data_loader/admissions/releases/2026.json'
     snapshot = static_repo / 'data_loader/admissions/snapshots/2026'
     install(manifest_path=manifest, target=snapshot)
     validate(json.loads((snapshot / 'catalog.json').read_text(encoding='utf-8')), snapshot)
-    return build_sql(Catalog(snapshot / 'catalog.json'), hashlib.sha256(manifest.read_bytes()).hexdigest())
+    download_quantities()
+    catalog = Catalog(snapshot / 'catalog.json')
+    if quantities_only:
+        return build_quantity_sql(catalog, hashlib.sha256(QUANTITY_MANIFEST.read_bytes()).hexdigest())
+    return build_sql(catalog, hashlib.sha256(manifest.read_bytes()).hexdigest(),
+                     hashlib.sha256(QUANTITY_MANIFEST.read_bytes()).hexdigest())
 
 
 def main():
@@ -144,8 +173,9 @@ def main():
     parser.add_argument('--static-repo', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT / '.private/admissions-2026.sql')
     parser.add_argument('--host', help='Import over pinned SSH after backup; omit to only generate SQL')
+    parser.add_argument('--quantities-only', action='store_true', help='Update tuition/places and provenance without replacing the olympiad catalog')
     args = parser.parse_args()
-    sql, stats = prepare(args.static_repo)
+    sql, stats = prepare(args.static_repo, quantities_only=args.quantities_only)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(sql, encoding='utf-8')
     print(json.dumps(stats, ensure_ascii=True))
