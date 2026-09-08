@@ -1,0 +1,6 @@
+# Files executed on Linux must survive a Windows checkout unchanged.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.tftpl text eol=lf
+*.tf text eol=lf
+*.hcl text eol=lf

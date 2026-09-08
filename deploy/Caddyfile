@@ -1,0 +1,31 @@
+{$API_DOMAIN} {
+    encode zstd gzip
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        Strict-Transport-Security "max-age=31536000"
+        -Server
+    }
+
+    @internal path /metrics /swagger /swagger/*
+    respond @internal 404
+
+    @logos {
+        path /logos/*
+        method GET HEAD
+    }
+    handle @logos {
+        reverse_proxy minio:9000
+    }
+
+    handle {
+        request_body {
+            max_size 12MB
+        }
+        reverse_proxy api:8080 {
+            health_uri /readyz
+            health_interval 10s
+            health_timeout 3s
+        }
+    }
+}

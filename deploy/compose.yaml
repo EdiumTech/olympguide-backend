@@ -1,0 +1,169 @@
+name: olympguide
+
+x-runtime: &runtime
+  restart: unless-stopped
+  logging:
+    driver: local
+    options: {max-size: "10m", max-file: "3"}
+
+services:
+  db:
+    <<: *runtime
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: olympguide
+      POSTGRES_DB: olympguide
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - ${DATA_ROOT:-/srv/olympguide/data}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U olympguide -d olympguide"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    <<: *runtime
+    image: redis:7.4-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command: [/bin/sh, -ec, 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    volumes:
+      - ${DATA_ROOT:-/srv/olympguide/data}/redis:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    <<: *runtime
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: olympguide
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?MINIO_PASSWORD is required}
+    volumes:
+      - ${DATA_ROOT:-/srv/olympguide/data}/minio:/data
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:9000/minio/health/live]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    image: liquibase/liquibase:4.33.0
+    environment:
+      LIQUIBASE_COMMAND_URL: jdbc:postgresql://db:5432/olympguide
+      LIQUIBASE_COMMAND_USERNAME: olympguide
+      LIQUIBASE_COMMAND_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      LIQUIBASE_COMMAND_CHANGELOG_FILE: changelog/db.changelog-master.xml
+      # Creating the schema named after the DB user changes PostgreSQL's implicit
+      # default schema. Pin migration history so subsequent runs find the same rows.
+      LIQUIBASE_LIQUIBASE_SCHEMA_NAME: public
+      LIQUIBASE_COMMAND_DEFAULT_SCHEMA_NAME: public
+      JAVA_OPTS: -Xmx512m
+    volumes:
+      - ../migrations:/liquibase/changelog:ro
+    command: update
+    depends_on:
+      db: {condition: service_healthy}
+    restart: "no"
+
+  storage:
+    <<: *runtime
+    image: olympguide-storage:${RELEASE_ID:-local}
+    build: ../storage_service
+    environment:
+      STORAGE_SERVICE_PORT: "50051"
+      MINIO_HOST: minio
+      MINIO_PORT: "9000"
+      MINIO_USER: olympguide
+      MINIO_PASSWORD: ${MINIO_PASSWORD:?MINIO_PASSWORD is required}
+      PUBLIC_STORAGE_URL: https://${API_DOMAIN:?API_DOMAIN is required}
+    depends_on:
+      minio: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, nc, -z, 127.0.0.1, "50051"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *runtime
+    image: olympguide-api:${RELEASE_ID:-local}
+    build: ../api
+    environment:
+      GIN_MODE: release
+      API_PORT: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: olympguide
+      DB_NAME: olympguide
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      STORAGE_SERVICE_HOST: storage
+      STORAGE_SERVICE_PORT: "50051"
+      TOKEN_SECRET: ${TOKEN_SECRET:?TOKEN_SECRET is required}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      SESSION_COOKIE_SECURE: "true"
+      BEARER_DATA_LOADER_TOKEN: ${BEARER_DATA_LOADER_TOKEN:?BEARER_DATA_LOADER_TOKEN is required}
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+      storage: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/readyz]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 12
+
+  email:
+    <<: *runtime
+    profiles: [email]
+    image: olympguide-email:${RELEASE_ID:-local}
+    build: ../email_service
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.mail.ru}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    depends_on:
+      redis: {condition: service_healthy}
+
+  diploma_loader:
+    <<: *runtime
+    image: olympguide-diploma:${RELEASE_ID:-local}
+    build: ../diploma_loader_service
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      BEARER_TOKEN: ${BEARER_DATA_LOADER_TOKEN:?BEARER_DATA_LOADER_TOKEN is required}
+      API_HOST: api
+      API_PORT: "8080"
+    depends_on:
+      api: {condition: service_healthy}
+
+  caddy:
+    <<: *runtime
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?API_DOMAIN is required}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${DATA_ROOT:-/srv/olympguide/data}/caddy/data:/data
+      - ${DATA_ROOT:-/srv/olympguide/data}/caddy/config:/config
+    depends_on:
+      api: {condition: service_healthy}

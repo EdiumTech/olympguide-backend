@@ -1,0 +1,62 @@
+#cloud-config
+groups: [docker]
+users:
+  - name: deploy
+    groups: [sudo, docker]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+ssh_pwauth: false
+disable_root: true
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - docker.io
+  - docker-compose-v2
+  - docker-buildx
+  - unattended-upgrades
+write_files:
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    content: |
+      {"log-driver":"local","log-opts":{"max-size":"10m","max-file":"3"},"live-restore":true,"registry-mirrors":["https://mirror.gcr.io"]}
+  - path: /usr/local/sbin/olympguide-init-data
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      device=/dev/disk/by-id/virtio-olympguide-data
+      for attempt in {1..60}; do
+        [ -b "$device" ] && break
+        sleep 2
+      done
+      [ -b "$device" ]
+      fs=$(blkid -s TYPE -o value "$device" || true)
+      if [ -z "$fs" ]; then
+        # Only the dedicated Terraform-created disk is ever initialized.
+        mkfs.ext4 -L olympguide-data "$device"
+      elif [ "$fs" != ext4 ]; then
+        echo "Unexpected data filesystem; refusing to format" >&2
+        exit 1
+      fi
+      uuid=$(blkid -s UUID -o value "$device")
+      mkdir -p /srv/olympguide
+      grep -q "UUID=$uuid " /etc/fstab || echo "UUID=$uuid /srv/olympguide ext4 defaults 0 2" >> /etc/fstab
+      mountpoint -q /srv/olympguide || mount /srv/olympguide
+      install -d -o deploy -g deploy -m 0750 /srv/olympguide/releases
+      install -d -o root -g root -m 0700 /srv/olympguide/secrets /srv/olympguide/backups
+      install -d -m 0755 /srv/olympguide/data
+  - path: /etc/ssh/sshd_config.d/60-olympguide.conf
+    permissions: '0644'
+    content: |
+      PasswordAuthentication no
+      PermitRootLogin no
+runcmd:
+  - [/usr/local/sbin/olympguide-init-data]
+  - [systemctl, enable, --now, docker]
+  - [systemctl, restart, docker]
+  - [systemctl, reload, ssh]
+  - [touch, /srv/olympguide/.bootstrap-complete]
