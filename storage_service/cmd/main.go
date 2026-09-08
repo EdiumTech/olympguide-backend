@@ -20,7 +20,7 @@ func main() {
 	}
 
 	minioClient := minio.NewMinioClient(cfg)
-	logoRepo := repository.NewMinioRepository(minioClient, fmt.Sprintf("%s:%d", cfg.Host, cfg.MinioPort))
+	logoRepo := repository.NewMinioRepository(minioClient, cfg.PublicStorageURL)
 	logoService := service.NewLogoService(logoRepo)
 	grpcHandler := handler.NewLogoHandler(logoService)
 

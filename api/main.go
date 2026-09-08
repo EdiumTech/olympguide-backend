@@ -14,6 +14,7 @@ import (
 	pb "api/proto/gen"
 	"api/repository"
 	"api/service"
+	"context"
 	"github.com/gin-contrib/sessions"
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
@@ -36,6 +37,16 @@ func main() {
 	utils.RegisterMetrics()
 
 	Router := router.NewRouter(handlers, mw, store)
+	Router.RegisterHealth(func(ctx context.Context) error {
+		sqlDB, err := db.DB()
+		if err != nil {
+			return err
+		}
+		if err := sqlDB.PingContext(ctx); err != nil {
+			return err
+		}
+		return rdb.Ping(ctx).Err()
+	})
 	Router.Run(cfg.ServerPort)
 }
 

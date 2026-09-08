@@ -22,8 +22,8 @@ type TokenService struct {
 
 func NewTokenService() *TokenService {
 	secretKey := os.Getenv("TOKEN_SECRET")
-	if secretKey == "" {
-		secretKey = "FAKE_TOKEN"
+	if len(secretKey) < 32 {
+		panic("TOKEN_SECRET must contain at least 32 bytes")
 	}
 	return &TokenService{secretKey: secretKey}
 }
@@ -39,7 +39,7 @@ func (s *TokenService) GenerateIDToken(userID uint) (string, error) {
 func (s *TokenService) ValidateIDToken(tokenString string) (uint, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.secretKey), nil
-	})
+	}, jwt.WithValidMethods([]string{"HS256"}))
 
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -76,7 +76,7 @@ func (s *TokenService) GenerateEmailToken(email string) (string, error) {
 func (s *TokenService) ValidateEmailToken(tokenString string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.secretKey), nil
-	})
+	}, jwt.WithValidMethods([]string{"HS256"}))
 
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {

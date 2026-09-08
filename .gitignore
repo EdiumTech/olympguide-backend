@@ -96,3 +96,17 @@ test-output/
 __pycache__/
 
 /.venv/
+
+# Deployment tools, credentials and local Terraform state
+/.tools/
+/.private/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+.env.*
+!.env.example
+crash.log

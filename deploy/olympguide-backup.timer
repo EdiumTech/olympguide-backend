@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily OlympGuide database backup before the disk snapshot
+
+[Timer]
+OnCalendar=*-*-* 01:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

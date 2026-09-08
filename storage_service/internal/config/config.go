@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -13,6 +15,7 @@ type Config struct {
 	MinioUser          string
 	MinioPassword      string
 	Host               string
+	PublicStorageURL   string
 }
 
 func LoadConfig() (*Config, error) {
@@ -28,7 +31,18 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("invalid MINIO_PORT: %w", err)
 	}
 
+	publicURL := strings.TrimRight(os.Getenv("PUBLIC_STORAGE_URL"), "/")
+	if publicURL != "" {
+		parsed, err := url.Parse(publicURL)
+		if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return nil, fmt.Errorf("PUBLIC_STORAGE_URL must be an absolute http(s) URL")
+		}
+	} else {
+		// Preserve the development Compose contract for existing installations.
+		publicURL = fmt.Sprintf("%s:%d", os.Getenv("PUBLIC_HOST"), minioPort)
+	}
 	return &Config{
+		PublicStorageURL:   publicURL,
 		StorageServicePort: storageServicePort,
 		MinioUser:          os.Getenv("MINIO_USER"),
 		MinioPassword:      os.Getenv("MINIO_PASSWORD"),

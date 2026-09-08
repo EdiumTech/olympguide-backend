@@ -1,0 +1,9 @@
+[Unit]
+Description=OlympGuide PostgreSQL logical backup
+Requires=docker.service
+After=docker.service
+RequiresMountsFor=/srv/olympguide
+
+[Service]
+Type=oneshot
+ExecStart=/srv/olympguide/current/deploy/backup.sh

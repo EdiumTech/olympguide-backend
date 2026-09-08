@@ -137,6 +137,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - BEARER_DATA_LOADER_TOKEN=${BEARER_DATA_LOADER_TOKEN}
       - TOKEN_SECRET=${TOKEN_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET:?Set a random session signing secret of at least 32 bytes}
+      - SESSION_COOKIE_SECURE=false
       - STORAGE_SERVICE_HOST=storage_service
       - STORAGE_SERVICE_PORT=${STORAGE_SERVICE_PORT}
     depends_on:

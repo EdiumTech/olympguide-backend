@@ -1,0 +1,8 @@
+# Fill these after inventory; this file does not contain credentials.
+dns_zone_id       = "REPLACE_WITH_EXISTING_ZONE_ID"
+ssh_public_key    = "ssh-ed25519 REPLACE_WITH_PUBLIC_KEY"
+ssh_allowed_cidrs = ["203.0.113.10/32"]
+
+# api.olympguide.ru already had 158.160.104.126 on 2026-09-07.
+# Inventory that server and import the record before enabling management.
+manage_dns_record = false
