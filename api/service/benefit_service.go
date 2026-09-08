@@ -5,6 +5,7 @@ import (
 	"api/model"
 	"api/repository"
 	"errors"
+	"gorm.io/gorm"
 )
 
 type IBenefitService interface {
@@ -56,6 +57,10 @@ func (b *BenefitService) GetBenefitsByDiploma(diplomaID string, request *dto.Ben
 		return nil, err
 	}
 
+	user, ok := request.UserID.(uint)
+	if !ok || user == 0 || diploma.UserID != user {
+		return nil, gorm.ErrRecordNotFound
+	}
 	benefits, err := b.benefitRepo.GetBenefitsByDiplomas([]model.Diploma{*diploma}, request)
 	if err != nil {
 		return nil, err

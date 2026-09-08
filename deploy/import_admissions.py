@@ -148,7 +148,7 @@ def build_quantity_sql(catalog, manifest_sha):
     return '\n'.join(sql) + '\n', dict(programs=len(records), coverage=catalog.quantity_data['coverage'])
 
 
-def prepare(static_repo, *, quantities_only=False):
+def prepare(static_repo, *, quantities_only=False, personal_only=False):
     static_repo = static_repo.resolve()
     sys.path.insert(0, str(static_repo / 'data_loader'))
     sys.path.insert(0, str(static_repo / 'web'))
@@ -161,6 +161,11 @@ def prepare(static_repo, *, quantities_only=False):
     install(manifest_path=manifest, target=snapshot)
     validate(json.loads((snapshot / 'catalog.json').read_text(encoding='utf-8')), snapshot)
     download_quantities()
+    if personal_only:
+        from admissions.personal import MANIFEST as PERSONAL_MANIFEST, SNAPSHOT as PERSONAL_SNAPSHOT, load, export_sql
+        install(manifest_path=PERSONAL_MANIFEST, target=PERSONAL_SNAPSHOT)
+        data = load()
+        return export_sql(data), {key: len(data[key]) for key in ('scholarships', 'events', 'evaluations')}
     catalog = Catalog(snapshot / 'catalog.json')
     if quantities_only:
         return build_quantity_sql(catalog, hashlib.sha256(QUANTITY_MANIFEST.read_bytes()).hexdigest())
@@ -173,9 +178,11 @@ def main():
     parser.add_argument('--static-repo', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT / '.private/admissions-2026.sql')
     parser.add_argument('--host', help='Import over pinned SSH after backup; omit to only generate SQL')
-    parser.add_argument('--quantities-only', action='store_true', help='Update tuition/places and provenance without replacing the olympiad catalog')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--quantities-only', action='store_true', help='Update tuition/places and provenance without replacing the olympiad catalog')
+    mode.add_argument('--personal-only', action='store_true', help='Import scholarships, source calendar and reviewed eligibility after the base catalog')
     args = parser.parse_args()
-    sql, stats = prepare(args.static_repo, quantities_only=args.quantities_only)
+    sql, stats = prepare(args.static_repo, quantities_only=args.quantities_only, personal_only=args.personal_only)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(sql, encoding='utf-8')
     print(json.dumps(stats, ensure_ascii=True))

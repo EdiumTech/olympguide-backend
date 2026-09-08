@@ -35,6 +35,9 @@ func (d *DiplomaService) NewDiplomaByUser(request *dto.DiplomaUserRequest, userI
 }
 
 func (d *DiplomaService) NewDiploma(request *dto.DiplomaRequest) error {
+	if err := ValidateDiplomaDetails(request.DiplomaDetails, request.Class, request.Level); err != nil {
+		return errs.InvalidRequest
+	}
 	return d.diplomaRepo.NewDiploma(newDiplomaModel(request))
 }
 
@@ -76,7 +79,8 @@ func (d *DiplomaService) SyncUserDiplomas(userID uint) error {
 
 func newDiplomaModel(request *dto.DiplomaRequest) *model.Diploma {
 	return &model.Diploma{
-		UserID:     request.UserID,
+		UserID:    request.UserID,
+		AwardYear: request.AwardYear, OlympiadYear: request.OlympiadYear, Profile: request.Profile, Result: request.Result,
 		OlympiadID: request.OlympiadID,
 		Class:      request.Class,
 		Level:      request.Level,
@@ -87,9 +91,11 @@ func newDiplomasResponse(diplomas []model.Diploma) []dto.DiplomaResponse {
 	diplomasResponse := make([]dto.DiplomaResponse, len(diplomas))
 	for i := range diplomas {
 		diplomasResponse[i] = dto.DiplomaResponse{
-			DiplomaID: diplomas[i].DiplomaID,
-			Class:     diplomas[i].Class,
-			Level:     diplomas[i].Level,
+			DiplomaID:      diplomas[i].DiplomaID,
+			OlympiadID:     diplomas[i].OlympiadID,
+			DiplomaDetails: dto.DiplomaDetails{AwardYear: diplomas[i].AwardYear, OlympiadYear: diplomas[i].OlympiadYear, Profile: diplomas[i].Profile, Result: diplomas[i].Result},
+			Class:          diplomas[i].Class,
+			Level:          diplomas[i].Level,
 			Olympiad: dto.OlympDiplomaInfo{
 				Name:    diplomas[i].Olympiad.Name,
 				Profile: diplomas[i].Olympiad.Profile,
