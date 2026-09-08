@@ -61,8 +61,10 @@ through `/admissions/rules` regardless of program mapping.
 
 `admission_metadata` on programs preserves source affiliations and coverage.
 `places_known`, `cost_known` and `subjects_known` are false: these quantities were
-not collected. The legacy numeric fields stay zero for wire compatibility; the
-updated iOS views display “Нет данных”. A level of zero on a catalogue olympiad
+not collected. Unknown `budget_places`, `paid_places` and `cost` are stored as
+SQL NULL and returned as JSON null. Confirmed zero values remain zero. Updated
+iOS views display “Нет данных” in both lists and the initial/refreshed detail
+card, while retaining compatibility with older zero values marked unknown. A level of zero on a catalogue olympiad
 means its source rows do not establish a single RSOSH level, not “level 0”.
 
 ## Validation

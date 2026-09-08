@@ -85,7 +85,7 @@ def build_sql(catalog, manifest_sha):
                     university_id=ref('university', 'university_id', p['university_id']),
                     faculty_id=ref('faculty', 'faculty_id', units[0]) if units else 'NULL',
                     field_id=f'(SELECT field_id FROM olympguide.field_of_study WHERE code={literal(p["field_id"])})',
-                    budget_places='0', paid_places='0', cost='0',
+                    budget_places='NULL', paid_places='NULL', cost='NULL',
                     link=literal(p.get('program_url') or p.get('source_url') or c.universities[p['university_id']]['site']),
                     admission_metadata=literal(dict(p, admission_year=year, places_known=False, cost_known=False, subjects_known=False)))
         insert('educational_program', data, 'catalog_key', ['name', 'university_id', 'faculty_id', 'field_id', 'link', 'admission_metadata'])

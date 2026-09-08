@@ -25,13 +25,21 @@ def verify(base, snapshot=None):
         fields = get(f'/university/{uid}/programs/by-field')
         ps = {p['program_id']: p for group in tree for p in group['programs']}
         assert ps and units and fields
+        for program in ps.values():
+            metadata = program.get('admission_metadata', {})
+            if metadata.get('places_known') is False:
+                assert program['budget_places'] is None and program['paid_places'] is None
+            if metadata.get('cost_known') is False:
+                assert program['cost'] is None
         programs.update(ps)
         count = get(f'/admissions/rules?university_id={uid}&limit=1')['total']
         assert count > 0
         for pid, program in ps.items():
             if program['admission_metadata'].get('rule_count', 0) == 0:
                 continue
-            assert get(f'/program/{pid}/')['program_id'] == pid
+            detail = get(f'/program/{pid}/')
+            assert detail['program_id'] == pid
+            assert all(detail[key] == program[key] for key in ('budget_places', 'paid_places', 'cost'))
             benefits = get(f'/program/{pid}/benefits')
             assert benefits
             info = benefits[0]['benefits'][0]

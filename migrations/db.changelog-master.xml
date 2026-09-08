@@ -40,4 +40,7 @@
     <changeSet id="10" author="sundayti">
         <sqlFile path="changelog/changes/015-admissions_catalog.sql"/>
     </changeSet>
+    <changeSet id="11" author="sundayti">
+        <sqlFile path="changelog/changes/016-unknown_program_quantities.sql"/>
+    </changeSet>
 </databaseChangeLog>

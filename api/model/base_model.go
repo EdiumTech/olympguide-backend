@@ -43,9 +43,9 @@ type Program struct {
 	Faculties         []Faculty `gorm:"many2many:olympguide.program_faculty;foreignKey:ProgramID;joinForeignKey:ProgramID;References:FacultyID;joinReferences:FacultyID"`
 	ProgramID         uint      `gorm:"primaryKey"`
 	Name              string
-	BudgetPlaces      uint
-	PaidPlaces        uint
-	Cost              uint
+	BudgetPlaces      *uint
+	PaidPlaces        *uint
+	Cost              *uint
 	Link              string
 	UniversityID      uint
 	FacultyID         uint
