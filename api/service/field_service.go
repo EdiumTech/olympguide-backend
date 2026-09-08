@@ -49,7 +49,7 @@ func newFieldResponse(field *model.Field) *dto.FieldResponse {
 }
 
 func newGroupsResponse(groups []model.GroupField) []dto.GroupResponse {
-	var response []dto.GroupResponse
+	response := make([]dto.GroupResponse, 0, len(groups))
 
 	for _, group := range groups {
 		if len(group.Fields) == 0 {

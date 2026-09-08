@@ -40,9 +40,9 @@ func (b *PgBenefitRepo) GetBenefitsByProgram(programID string, params *dto.Benef
 		Preload("ConfSubjRel").
 		Preload("Olympiad").
 		Where("program_id = ?", programID)
-	applyBenefitByProgramFilters(query, params.Levels, params.Profiles, params.Search)
-	applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
-	applyBenefitByProgramSorting(query, params.Sort, params.Order)
+	query = applyBenefitByProgramFilters(query, params.Levels, params.Profiles, params.Search)
+	query = applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
+	query = applyBenefitByProgramSorting(query, params.Sort, params.Order)
 	err := query.Find(&benefits).Error
 	if err != nil {
 		return nil, err
@@ -73,8 +73,8 @@ func (b *PgBenefitRepo) GetBenefitsByOlympiad(olympiadID string, params *dto.Ben
 		Where("olympiad_id = ?", olympiadID).
 		Order("fos.code, pr.program_id ASC, is_bvi DESC, min_diploma_level ASC")
 
-	applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
-	applyBenefitsByOlympiadFilters(query, params.Fields, params.Search, params.UniversityID)
+	query = applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
+	query = applyBenefitsByOlympiadFilters(query, params.Fields, params.Search, params.UniversityID)
 	err := query.Find(&benefits).Error
 	if err != nil {
 		return nil, err
@@ -120,8 +120,8 @@ func (b *PgBenefitRepo) GetBenefitsByDiplomas(diplomas []model.Diploma, params *
 		Where(clause.OrConditions{Exprs: orConditions}).
 		Order("fos.code ASC, pr.program_id ASC, is_bvi DESC")
 
-	applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
-	applyBenefitsByOlympiadFilters(query, params.Fields, params.Search, params.UniversityID)
+	query = applyBenefitBaseFilters(query, &params.BenefitBaseQueryParams)
+	query = applyBenefitsByOlympiadFilters(query, params.Fields, params.Search, params.UniversityID)
 	err := query.Find(&benefits).Error
 	return benefits, err
 }

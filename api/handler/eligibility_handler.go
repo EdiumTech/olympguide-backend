@@ -65,11 +65,14 @@ func (h *EligibilityHandler) UpdateDiploma(c *gin.Context) {
 
 func (h *EligibilityHandler) Catalog(c *gin.Context) {
 	var olympiads = []struct {
-		OlympiadID uint   `json:"olympiad_id"`
-		CatalogKey string `json:"catalog_key"`
-		Name       string `json:"name"`
-		Profile    string `json:"profile"`
-		Category   string `json:"category"`
+		OlympiadID     uint    `json:"olympiad_id"`
+		CatalogKey     string  `json:"catalog_key"`
+		AcademicYear   *string `json:"academic_year,omitempty"`
+		RegistryStatus *string `json:"registry_status,omitempty"`
+		AdmissionYear  *uint   `json:"admission_year,omitempty"`
+		Name           string  `json:"name"`
+		Profile        string  `json:"profile"`
+		Category       string  `json:"category"`
 	}{}
 	var programs = []struct {
 		ProgramID     uint   `json:"program_id"`
@@ -78,7 +81,7 @@ func (h *EligibilityHandler) Catalog(c *gin.Context) {
 		UniversityKey string `json:"university_key"`
 	}{}
 	db := h.db.WithContext(c.Request.Context())
-	if err := db.Table("olympguide.olympiad").Select("olympiad_id,catalog_key,name,profile,category").Where("catalog_key IS NOT NULL").Order("name,profile,olympiad_id").Scan(&olympiads).Error; err != nil {
+	if err := db.Table("olympguide.olympiad").Select("olympiad_id,catalog_key,name,profile,category,academic_year,registry_status,admission_year").Where("catalog_key IS NOT NULL").Order("name,profile,olympiad_id").Scan(&olympiads).Error; err != nil {
 		calendarError(c, err)
 		return
 	}

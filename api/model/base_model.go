@@ -3,16 +3,19 @@ package model
 import "encoding/json"
 
 type Olympiad struct {
-	Category      string
-	AdmissionYear *uint
-	OlympiadID    uint `gorm:"primaryKey"`
-	Name          string
-	Description   string
-	Level         int16
-	Profile       string
-	Link          string
-	Popularity    int
-	Like          bool `gorm:"column:like;->"`
+	AcademicYear   string
+	RegistryStatus string
+	Subjects       string
+	Category       string
+	AdmissionYear  *uint
+	OlympiadID     uint `gorm:"primaryKey"`
+	Name           string
+	Description    string
+	Level          int16
+	Profile        string
+	Link           string
+	Popularity     int
+	Like           bool `gorm:"column:like;->"`
 }
 
 type Field struct {

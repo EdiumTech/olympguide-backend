@@ -148,11 +148,16 @@ def build_quantity_sql(catalog, manifest_sha):
     return '\n'.join(sql) + '\n', dict(programs=len(records), coverage=catalog.quantity_data['coverage'])
 
 
-def prepare(static_repo, *, quantities_only=False, personal_only=False):
+def prepare(static_repo, *, quantities_only=False, personal_only=False, registry_only=False):
     static_repo = static_repo.resolve()
     sys.path.insert(0, str(static_repo / 'data_loader'))
     sys.path.insert(0, str(static_repo / 'web'))
     from admissions.download import install
+    if registry_only:
+        from admissions.rsosh import MANIFEST, SNAPSHOT, load, export_sql, validate
+        install(manifest_path=MANIFEST, target=SNAPSHOT)
+        data = load()
+        return export_sql(data), validate(data)
     from admissions.loader import validate
     from catalog import Catalog
     from admissions.quantity_catalog import download as download_quantities, MANIFEST as QUANTITY_MANIFEST
@@ -181,8 +186,9 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--quantities-only', action='store_true', help='Update tuition/places and provenance without replacing the olympiad catalog')
     mode.add_argument('--personal-only', action='store_true', help='Import scholarships, source calendar and reviewed eligibility after the base catalog')
+    mode.add_argument('--registry-only', action='store_true', help='Import the separate RSOSH 2026/2027 draft and verified university contacts')
     args = parser.parse_args()
-    sql, stats = prepare(args.static_repo, quantities_only=args.quantities_only, personal_only=args.personal_only)
+    sql, stats = prepare(args.static_repo, quantities_only=args.quantities_only, personal_only=args.personal_only, registry_only=args.registry_only)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(sql, encoding='utf-8')
     print(json.dumps(stats, ensure_ascii=True))
